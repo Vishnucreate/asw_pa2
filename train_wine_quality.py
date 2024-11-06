@@ -7,8 +7,8 @@ from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 spark = SparkSession.builder.appName("WineQualityPrediction").getOrCreate()
 
 # Load Training and Validation Data
-train_data = spark.read.csv("/home/hadoop/data/TrainingDataset.csv", header=True, inferSchema=True)
-val_data = spark.read.csv("/home/hadoop/data/ValidationDataset.csv", header=True, inferSchema=True)
+train_data = spark.read.csv("TrainingDataset.csv", header=True, inferSchema=True)
+val_data = spark.read.csv("ValidationDataset.csv", header=True, inferSchema=True)
 
 # Prepare feature vector
 assembler = VectorAssembler(inputCols=[col for col in train_data.columns if col != 'label'], outputCol="features")
@@ -25,8 +25,8 @@ evaluator = MulticlassClassificationEvaluator(labelCol="label", predictionCol="p
 f1_score = evaluator.evaluate(predictions)
 print(f"Validation F1 Score: {f1_score}")
 
-# Save the Model
-model.save("/home/hadoop/wine_quality_model")
+# Save the Model in the current directory
+model.save("wine_quality_model")
 
 # Stop Spark session
 spark.stop()
