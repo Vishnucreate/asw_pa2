@@ -1,32 +1,26 @@
 from pyspark.sql import SparkSession
+from pyspark.ml.classification import LogisticRegressionModel
 from pyspark.ml.feature import VectorAssembler
-from pyspark.ml.classification import LogisticRegression
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 
 # Initialize Spark session
 spark = SparkSession.builder.appName("WineQualityPrediction").getOrCreate()
 
-# Load Training and Validation Data
-train_data = spark.read.csv("/home/hadoop/data/TrainingDataset.csv", header=True, inferSchema=True)
-val_data = spark.read.csv("/home/hadoop/data/ValidationDataset.csv", header=True, inferSchema=True)
+# Load the trained model from the current directory
+model = LogisticRegressionModel.load("wine_quality_model")
 
-# Prepare feature vector
-assembler = VectorAssembler(inputCols=[col for col in train_data.columns if col != 'label'], outputCol="features")
-train_data = assembler.transform(train_data).select("features", "label")
-val_data = assembler.transform(val_data).select("features", "label")
+# Load and Prepare Test Data (ValidationDataset.csv used as a test dataset)
+test_data = spark.read.csv("ValidationDataset.csv", header=True, inferSchema=True)
+assembler = VectorAssembler(inputCols=[col for col in test_data.columns if col != 'label'], outputCol="features")
+test_data = assembler.transform(test_data).select("features", "label")
 
-# Train a Logistic Regression model
-lr = LogisticRegression(featuresCol="features", labelCol="label")
-model = lr.fit(train_data)
+# Make predictions
+predictions = model.transform(test_data)
 
-# Validate the Model
-predictions = model.transform(val_data)
+# Evaluate Predictions
 evaluator = MulticlassClassificationEvaluator(labelCol="label", predictionCol="prediction", metricName="f1")
 f1_score = evaluator.evaluate(predictions)
-print(f"Validation F1 Score: {f1_score}")
-
-# Save the Model
-model.save("/home/hadoop/wine_quality_model")
+print(f"Test F1 Score: {f1_score}")
 
 # Stop Spark session
 spark.stop()
